@@ -7,7 +7,7 @@ export function Modal({ title, subtitle, onClose, children, wide = false }: { ti
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const dialog = ref.current!;
-    const elements = () => [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), input, textarea, select, [tabindex="0"]')];
+    const elements = () => [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input, textarea, select, [tabindex="0"]')];
     (dialog.querySelector<HTMLElement>('[data-autofocus]') ?? elements()[0])?.focus();
     function key(e: KeyboardEvent) {
       if (e.key === 'Escape') { e.preventDefault(); closeRef.current(); }

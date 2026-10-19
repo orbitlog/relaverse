@@ -21,12 +21,15 @@ function NameSprite({ text, root = false, caption = false, opacity = 1, radius =
   const texture = useMemo(() => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
-    const font = caption ? '24px sans-serif' : '40px sans-serif';
+    const font = caption ? '600 24px sans-serif' : '600 40px sans-serif';
     ctx.font = font;
     canvas.width = Math.ceil(Math.min(1200, ctx.measureText(text).width + 32)); canvas.height = 80;
     ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = root ? '#61491f' : caption ? '#f2deb0' : '#fff9ed';
-    if (!root) { ctx.shadowColor = '#081429'; ctx.shadowBlur = 8; }
+    if (!root) {
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx.beginPath(); ctx.roundRect(2, 13, canvas.width - 4, 54, 10); ctx.fill();
+    }
+    ctx.fillStyle = root ? '#493311' : '#263d4e';
     ctx.fillText(text, canvas.width / 2, 40, canvas.width - 20);
     return new CanvasTexture(canvas);
   }, [text, root, caption]);
@@ -62,7 +65,7 @@ function PersonNode({ person, root, selected, dimmed, position, start, showLabel
   const [hovered, setHovered] = useState(false);
   const floating = useRef<Group>(null);
   const select = useGraphStore(s => s.select), focus = useGraphStore(s => s.focus);
-  const color = root ? '#f5d280' : '#9fc8f1';
+  const color = root ? '#dfb759' : '#6d9dbf';
   const radius = root ? 0.95 : 0.62;
   useFrame(({ clock }) => { if (floating.current) floating.current.position.y = reduced ? 0 : Math.sin(clock.elapsedTime * 0.8 + position.x) * 0.045; });
   function down(event: ThreeEvent<PointerEvent>) {
@@ -74,15 +77,15 @@ function PersonNode({ person, root, selected, dimmed, position, start, showLabel
     <group ref={floating}>
       <mesh userData={{ personId: person.id }} onPointerDown={down} onPointerOver={e => { e.stopPropagation(); setHovered(true); onHover(person.id); }} onPointerOut={() => { setHovered(false); onHover(null); }} onClick={e => { e.stopPropagation(); select(person.id); }} onDoubleClick={e => { e.stopPropagation(); focus(person.id); }}>
         <sphereGeometry args={[radius, 48, 48]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={root ? 0.1 : 0.04} roughness={0.26} metalness={0.18} transparent opacity={dimmed ? 0.2 : 1} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={root ? 0.06 : 0.025} roughness={0.26} metalness={0.18} transparent opacity={dimmed ? 0.2 : 1} />
       </mesh>
       <mesh scale={root ? 1.9 : 1.65}>
         <sphereGeometry args={[radius, 24, 24]} />
         <meshBasicMaterial color={color} transparent opacity={dimmed ? 0.015 : 0.045} blending={AdditiveBlending} depthWrite={false} />
       </mesh>
       {root && <group rotation={[Math.PI / 2.25, 0.2, -0.3]}>
-        <mesh><torusGeometry args={[1.45, 0.012, 8, 100]} /><meshBasicMaterial color="#ffe0a0" transparent opacity={dimmed ? 0.08 : 0.75} /></mesh>
-        <mesh rotation={[0.6, 0.6, 0.3]}><torusGeometry args={[1.6, 0.007, 8, 100]} /><meshBasicMaterial color="#f7d994" transparent opacity={dimmed ? 0.08 : 0.45} /></mesh>
+        <mesh><torusGeometry args={[1.45, 0.012, 8, 100]} /><meshBasicMaterial color="#ab8c53" transparent opacity={dimmed ? 0.08 : 0.75} /></mesh>
+        <mesh rotation={[0.6, 0.6, 0.3]}><torusGeometry args={[1.6, 0.007, 8, 100]} /><meshBasicMaterial color="#b19a70" transparent opacity={dimmed ? 0.08 : 0.45} /></mesh>
       </group>}
       {selected && <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -radius - 0.12, 0]}><ringGeometry args={[radius * 1.15, radius * 1.22, 64]} /><meshBasicMaterial color={color} transparent opacity={0.5} side={2} /></mesh>}
       {(showLabel || selected || hovered) && <NameSprite text={person.name} root={root} radius={radius} opacity={dimmed ? 0.25 : 1} />}
@@ -92,7 +95,7 @@ function PersonNode({ person, root, selected, dimmed, position, start, showLabel
 }
 
 function RelationshipEdge({ from, to, active }: { from: Vector3Data; to: Vector3Data; active: boolean }) {
-  return <Line points={[xyz(from), xyz(to)]} color={active ? '#f4dab0' : '#c0cee8'} lineWidth={active ? 1.8 : 1} transparent opacity={active ? 0.9 : 0.35} />;
+  return <Line points={[xyz(from), xyz(to)]} color={active ? '#2f4c65' : '#42596a'} lineWidth={active ? 2 : 1.4} transparent opacity={active ? 1 : 0.85} />;
 }
 
 function Universe({ controlsRef, reduced, startRef, overlays, onHover, onInteraction, clickSuppression, editMode }: { controlsRef: React.RefObject<CameraControls | null>; reduced: boolean; startRef: React.RefObject<StartInteraction | null>; overlays: React.RefObject<Map<string, HTMLDivElement>>; onHover: (id: string | null) => void; onInteraction: (kind: 'move' | 'connect' | null) => void; clickSuppression: React.RefObject<boolean>; editMode: EditMode }) {
@@ -237,8 +240,8 @@ function Universe({ controlsRef, reduced, startRef, overlays, onHover, onInterac
       return <RelationshipEdge key={edges[0].id} from={position(from)} to={position(to)} active={active} />;
     })}
     {graph.people.map(person => <PersonNode key={person.id} person={person} root={person.id === graph.rootPersonId} selected={selectedId === person.id || preview?.targetId === person.id} dimmed={!neighbors.has(person.id)} position={position(person)} showLabel={showLabels && (graph.people.length < 35 || selectedId === person.id)} start={start} reduced={reduced} onHover={onHover} editMode={editMode} />)}
-    {source && preview && interaction?.kind === 'connect' && <Line points={[xyz(source.position), xyz(preview.targetId ? graph.people.find(p => p.id === preview.targetId)!.position : preview.position)]} color="#ffe5a5" lineWidth={2.5} dashed dashSize={0.18} gapSize={0.12} />}
-    {draft && !draft.targetId && <group position={xyz(draft.position)}><mesh><sphereGeometry args={[0.46, 24, 24]} /><meshStandardMaterial color="#9ed7ef" transparent opacity={0.4} wireframe /></mesh><Line points={[xyz({ x: 0, y: 0, z: 0 }), xyz({ x: graph.people.find(p => p.id === draft.sourceId)!.position.x - draft.position.x, y: graph.people.find(p => p.id === draft.sourceId)!.position.y - draft.position.y, z: graph.people.find(p => p.id === draft.sourceId)!.position.z - draft.position.z })]} color="#8ed9c5" dashed dashSize={0.18} gapSize={0.12} /></group>}
+    {source && preview && interaction?.kind === 'connect' && <Line points={[xyz(source.position), xyz(preview.targetId ? graph.people.find(p => p.id === preview.targetId)!.position : preview.position)]} color="#62758d" lineWidth={2.5} dashed dashSize={0.18} gapSize={0.12} />}
+    {draft && !draft.targetId && <group position={xyz(draft.position)}><mesh><sphereGeometry args={[0.46, 24, 24]} /><meshStandardMaterial color="#9ed7ef" transparent opacity={0.4} wireframe /></mesh><Line points={[xyz({ x: 0, y: 0, z: 0 }), xyz({ x: graph.people.find(p => p.id === draft.sourceId)!.position.x - draft.position.x, y: graph.people.find(p => p.id === draft.sourceId)!.position.y - draft.position.y, z: graph.people.find(p => p.id === draft.sourceId)!.position.z - draft.position.z })]} color="#5c8a78" dashed dashSize={0.18} gapSize={0.12} /></group>}
     <CameraControls ref={controlsRef} enabled={!interaction && !draft} minDistance={3} maxDistance={1000} smoothTime={reduced ? 0 : 0.3} onRest={() => {
       const c = controlsRef.current; if (!c || interactionRef.current) return;
       const p = c.getPosition(new Vector3()), t = c.getTarget(new Vector3());

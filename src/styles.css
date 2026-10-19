@@ -75,7 +75,6 @@ input:focus, textarea:focus { outline: none; border-color: #a1e7ce5c !important;
 .projected-overlay { position: absolute; top: 0; left: 0; pointer-events: none; will-change: transform; }
 .projected-overlay > button, .projected-overlay .edge-labels { transform: translate(-50%, -50%); }
 .edge-overlay { z-index: 1; }.edge-overlay button { pointer-events: auto; }
-.canvas-atmosphere { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 51% 48%, #1730364a 0%, transparent 42%), radial-gradient(ellipse at 85% 100%, #152c471a, transparent 50%); }
 .coordinate-grid { position: absolute; width: 160%; height: 700px; left: -30%; bottom: -510px; transform: perspective(600px) rotateX(55deg); transform-origin: center top; background-image: linear-gradient(#6a9baa0b 1px, transparent 1px), linear-gradient(90deg,#6a9baa0b 1px,transparent 1px); background-size: 70px 70px; mask-image: radial-gradient(ellipse at center, black, transparent 65%); pointer-events: none; }
 .stage-heading { position: absolute; left: 34px; top: 33px; z-index: 5; pointer-events: none; }
 .eyebrow { font-size: 9px; color: #667b85; letter-spacing: 1.75px; font-weight: 500; }
