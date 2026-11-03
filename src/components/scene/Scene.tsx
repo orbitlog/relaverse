@@ -6,6 +6,7 @@ import { Move, MousePointer2, Plus, RotateCcw } from 'lucide-react';
 import { useGraphStore } from '../../stores/graphStore';
 import { findOpenPosition } from '../../domain/layout';
 import type { Person, Relationship, Vector3Data } from '../../types/graph';
+import { getNodeScale } from './nodePresentation';
 
 export interface SceneHandle { zoom: (amount: number) => void }
 export type EditMode = 'pan' | 'rotate' | 'move' | 'connect';
@@ -64,10 +65,16 @@ function PersonNode({ person, root, selected, dimmed, position, start, showLabel
 }) {
   const [hovered, setHovered] = useState(false);
   const floating = useRef<Group>(null);
+  const { camera, size } = useThree();
   const select = useGraphStore(s => s.select), focus = useGraphStore(s => s.focus);
   const color = root ? '#dfb759' : '#6d9dbf';
   const radius = root ? 0.95 : 0.62;
-  useFrame(({ clock }) => { if (floating.current) floating.current.position.y = reduced ? 0 : Math.sin(clock.elapsedTime * 0.8 + position.x) * 0.045; });
+  useFrame(({ clock }) => {
+    if (!floating.current) return;
+    const float = reduced ? 0 : Math.sin(clock.elapsedTime * 0.8 + position.x) * 0.045;
+    floating.current.position.y = float;
+    floating.current.scale.setScalar(getNodeScale(camera, new Vector3(position.x, position.y + float, position.z), radius, size.width, root ? 64 : 48));
+  });
   function down(event: ThreeEvent<PointerEvent>) {
     if (editMode === 'pan' || editMode === 'rotate') return;
     event.stopPropagation();
@@ -203,22 +210,23 @@ function Universe({ controlsRef, reduced, startRef, overlays, onHover, onInterac
 
   // Keep interactive labels in the app's single DOM React root, projected from 3D each frame.
   useFrame(({ clock }) => {
-    const projectOverlay = (key: string, point: Vector3) => {
+    const projectOverlay = (key: string, point: Vector3, offsetX = 0) => {
       const element = overlays.current.get(key); if (!element) return;
       const projected = point.project(camera);
       element.style.visibility = projected.z < -1 || projected.z > 1 ? 'hidden' : 'visible';
-      element.style.transform = `translate3d(${(projected.x + 1) * size.width / 2}px, ${(-projected.y + 1) * size.height / 2}px, 0)`;
+      element.style.transform = `translate3d(${(projected.x + 1) * size.width / 2 + offsetX}px, ${(-projected.y + 1) * size.height / 2}px, 0)`;
     };
     graph.people.forEach(p => {
       const pos = position(p), radius = p.id === graph.rootPersonId ? 0.95 : 0.62;
       const float = reduced ? 0 : Math.sin(clock.elapsedTime * 0.8 + pos.x) * 0.045;
       const center = new Vector3(pos.x, pos.y + float, pos.z);
+      const displayRadius = radius * getNodeScale(camera, center, radius, size.width, p.id === graph.rootPersonId ? 64 : 48);
       const right = new Vector3().setFromMatrixColumn(camera.matrixWorld, 0), up = new Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
-      projectOverlay(`person:${p.id}`, center.clone().addScaledVector(right, radius + 0.6).addScaledVector(up, radius * 0.7));
+      projectOverlay(`person:${p.id}`, center.clone().addScaledVector(right, displayRadius).addScaledVector(up, displayRadius * 0.7), 24);
       projectOverlay(`body:${p.id}`, center.clone());
       const body = overlays.current.get(`body:${p.id}`);
       if (body) {
-        const projectedCenter = center.clone().project(camera), projectedEdge = center.clone().addScaledVector(right, radius).project(camera);
+        const projectedCenter = center.clone().project(camera), projectedEdge = center.clone().addScaledVector(right, displayRadius).project(camera);
         const diameter = Math.max(24, Math.abs(projectedEdge.x - projectedCenter.x) * size.width);
         body.style.width = `${diameter}px`; body.style.height = `${diameter}px`;
       }
